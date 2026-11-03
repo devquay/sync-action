@@ -1,0 +1,100 @@
+name: DevQuay sync
+description: Keep AGENTS.md, CLAUDE.md, Cursor rules and .devquay/docs in step with your DevQuay project, through a pull request.
+author: DevQuay
+branding:
+  icon: anchor
+  color: blue
+
+inputs:
+  api-key:
+    description: A DevQuay workspace API key (read scope is enough). Store it as a secret.
+    required: true
+  project:
+    description: The DevQuay project slug. Default, the project that lists this repository.
+    required: false
+    default: ""
+  format:
+    description: agents-md, claude-md, cursor or all; comma-separated for several.
+    required: false
+    default: agents-md
+  mode:
+    description: "pull-request: open or update a pull request with the changes. check: fail when files are out of date. write: only write the files."
+    required: false
+    default: pull-request
+  api-url:
+    description: The DevQuay API.
+    required: false
+    default: https://api.devquay.com
+  cli-version:
+    description: The devquay CLI version to run.
+    required: false
+    default: "0"
+  branch:
+    description: The pull request branch.
+    required: false
+    default: devquay/sync
+  token:
+    description: Token that opens the pull request; needs contents and pull-requests write.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  changed:
+    description: Whether any DevQuay file changed.
+    value: ${{ steps.changes.outputs.changed }}
+  pull-request-url:
+    description: The pull request opened or updated, in pull-request mode.
+    value: ${{ steps.pr.outputs.pull-request-url }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 22
+
+    - name: Sync DevQuay files
+      shell: bash
+      env:
+        DEVQUAY_API_KEY: ${{ inputs.api-key }}
+        DEVQUAY_API_URL: ${{ inputs.api-url }}
+        INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_CLI: ${{ inputs.cli-version }}
+      run: |
+        args=(sync --format "$INPUT_FORMAT")
+        if [ -n "$INPUT_PROJECT" ]; then args+=(--project "$INPUT_PROJECT"); fi
+        if [ "$INPUT_MODE" = "check" ]; then args+=(--check); fi
+        npx --yes "devquay@${INPUT_CLI}" "${args[@]}"
+
+    - name: Detect changes
+      id: changes
+      shell: bash
+      run: |
+        if [ -n "$(git status --porcelain -- AGENTS.md CLAUDE.md .devquay .cursor/rules)" ]; then
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Open or update the pull request
+      id: pr
+      if: inputs.mode == 'pull-request' && steps.changes.outputs.changed == 'true'
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ inputs.token }}
+        branch: ${{ inputs.branch }}
+        delete-branch: true
+        add-paths: |
+          AGENTS.md
+          CLAUDE.md
+          .devquay/**
+          .cursor/rules/devquay-*.mdc
+        commit-message: "chore: sync DevQuay rules"
+        title: "chore: sync DevQuay rules"
+        body: |
+          The DevQuay documents this repository's project adopts have changed. This pull request refreshes the copies agents read without MCP (`npx devquay sync`).
+
+          Review the diff like any other: the source of truth stays in DevQuay; propose changes there.
+        labels: devquay
