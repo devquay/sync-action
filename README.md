@@ -1,6 +1,6 @@
 # DevQuay sync action
 
-Keeps the DevQuay files in a repository (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/devquay-*.mdc` and `.devquay/`) in step with the documents its DevQuay project adopts. It runs [`npx devquay sync`](https://www.npmjs.com/package/devquay) and opens or updates a pull request when something changed. It never pushes to your default branch.
+Keeps the DevQuay files in a repository (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/devquay-*.mdc` and `.devquay/`) in step with the documents its DevQuay project adopts. It runs [`npx @devquay/cli sync`](https://www.npmjs.com/package/devquay) and opens or updates a pull request when something changed. It never pushes to your default branch.
 
 ## Use
 

@@ -66,7 +66,7 @@ runs:
         args=(sync --format "$INPUT_FORMAT")
         if [ -n "$INPUT_PROJECT" ]; then args+=(--project "$INPUT_PROJECT"); fi
         if [ "$INPUT_MODE" = "check" ]; then args+=(--check); fi
-        npx --yes "devquay@${INPUT_CLI}" "${args[@]}"
+        npx --yes "@devquay/cli@${INPUT_CLI}" "${args[@]}"
 
     - name: Detect changes
       id: changes
@@ -94,7 +94,7 @@ runs:
         commit-message: "chore: sync DevQuay rules"
         title: "chore: sync DevQuay rules"
         body: |
-          The DevQuay documents this repository's project adopts have changed. This pull request refreshes the copies agents read without MCP (`npx devquay sync`).
+          The DevQuay documents this repository's project adopts have changed. This pull request refreshes the copies agents read without MCP (`npx @devquay/cli sync`).
 
           Review the diff like any other: the source of truth stays in DevQuay; propose changes there.
         labels: devquay
